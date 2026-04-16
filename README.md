@@ -194,6 +194,58 @@ cd server
 npm test
 ```
 
+## Deploy (Vercel + Render free tier)
+
+### 1) Deploy database on Render (Postgres)
+
+- In Render, create a **PostgreSQL** service.
+- Copy the **External Database URL** (this is your `DATABASE_URL`).
+
+### 2) Deploy API on Render (`server/`)
+
+Create a **Web Service** from this GitHub repo with:
+
+- **Root Directory:** `server`
+- **Build Command:** `npm install && npm run build && npx prisma migrate deploy && npx prisma db seed`
+- **Start Command:** `npm start`
+
+Set environment variables:
+
+- `DATABASE_URL` = Render Postgres External URL
+- `JWT_SECRET` = long random string
+- `PUBLIC_API_KEY` = long random string
+- `PORT` = `10000` (or leave unset; Render sets port via env)
+
+**Free Web Service note:** Render’s **Pre-Deploy Command** is only for **paid** web services (see [Deploys — Pre-deploy command](https://render.com/docs/deploys#pre-deploy-command)). On the free instance type, run migrations and seed from the **build command** above instead. The seed script uses `upsert`, so re-running it on each deploy is safe.
+
+**Paid alternative:** If you upgrade the service, you can move `prisma migrate deploy` (and optionally `db seed`) into **Pre-Deploy Command** and keep the build command as `npm install && npm run build` only.
+
+If migrations cannot reach the database during the build step (uncommon), use **Start Command** `sh -c "npx prisma migrate deploy && npx prisma db seed && npm start"` and keep the build command as `npm install && npm run build` only.
+
+After deploy, note your API URL, e.g. `https://asset-maintenance-api.onrender.com`.
+
+### 3) Deploy client on Vercel (`client/`)
+
+Import this GitHub repo into Vercel and set:
+
+- **Root Directory:** `client`
+- **Build Command:** `npm run build`
+- **Output Directory:** `dist`
+
+Optional env var:
+
+- `VITE_API_BASE` = your Render API URL if you want the browser to call Render **directly** (then set CORS as needed). If unset, the app uses same-origin `/api/...`.
+
+The repo includes `client/vercel.json`, which **proxies** `/api/*` to your Render API so preview and production work **without** `VITE_API_BASE`. Update the rewrite URL there if your backend hostname changes, commit, and redeploy.
+
+### 4) Verify production flow
+
+- Open Vercel app URL.
+- Login with seeded demo credentials:
+  - `user@demo.com` / `password123`
+  - `manager@demo.com` / `password123`
+  - `tech@demo.com` / `password123`
+
 ## Project layout
 
 ```

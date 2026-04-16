@@ -1,6 +1,7 @@
 import type { AuthUser, Task, TaskListResponse } from "./types";
 
-const API_BASE = "";
+/** Empty = same-origin `/api/...` (Vite dev proxy, or Vercel rewrite to Render in `vercel.json`). */
+const API_BASE = (import.meta.env.VITE_API_BASE || "").replace(/\/$/, "");
 
 function getToken(): string | null {
   return localStorage.getItem("token");
@@ -15,7 +16,8 @@ export async function apiFetch<T>(path: string, options: RequestInit = {}): Prom
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
-  const res = await fetch(`${API_BASE}${path}`, { ...options, headers });
+  const url = `${API_BASE}${path}`;
+  const res = await fetch(url, { ...options, headers });
   const text = await res.text();
   const data = text ? (JSON.parse(text) as unknown) : null;
   if (!res.ok) {
