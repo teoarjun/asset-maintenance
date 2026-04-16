@@ -1,0 +1,23 @@
+# Optional: run PostgreSQL locally without installing Postgres on the host.
+# From repo root: docker compose up -d
+# Then: cd server && cp .env.example .env && npx prisma migrate deploy && npx prisma db seed
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: asset
+      POSTGRES_PASSWORD: asset
+      POSTGRES_DB: asset_maintenance
+    ports:
+      - "5432:5432"
+    volumes:
+      - asset_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U asset -d asset_maintenance"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  asset_pg_data:

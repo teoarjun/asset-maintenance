@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  MANAGER
+  TECHNICIAN
+}
+
+enum TaskStatus {
+  REPORTED
+  ASSIGNED
+  IN_PROGRESS
+  AWAITING_MATERIAL_APPROVAL
+  PENDING_COMPLETION
+  CLOSED
+}
+
+enum MaterialRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model User {
+  id             Int     @id @default(autoincrement())
+  email          String  @unique
+  passwordHash   String
+  name           String
+  role           Role
+  reportedTasks  Task[]  @relation("Reporter")
+  assignedTasks  Task[]  @relation("Assignee")
+  createdAt      DateTime @default(now())
+}
+
+model Task {
+  id               Int        @id @default(autoincrement())
+  taskCode         String     @unique
+  title            String
+  description      String
+  machineryLabel   String?
+  status           TaskStatus
+  reporterId       Int
+  assigneeId       Int?
+  reporter         User       @relation("Reporter", fields: [reporterId], references: [id])
+  assignee         User?      @relation("Assignee", fields: [assigneeId], references: [id])
+  materialRequests MaterialRequest[]
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+
+  @@index([taskCode])
+  @@index([status])
+  @@index([reporterId])
+  @@index([assigneeId])
+}
+
+model MaterialRequest {
+  id        Int                   @id @default(autoincrement())
+  taskId    Int
+  task      Task                  @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  itemsText String
+  status    MaterialRequestStatus @default(PENDING)
+  createdAt DateTime              @default(now())
+}
